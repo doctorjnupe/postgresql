@@ -17,7 +17,7 @@ template "/var/lib/postgresql/#{node[:postgresql][:version]}/main/recovery.conf"
   mode   0600
   variables(
     :listen_addresses     => node.postgresql.listen_addresses,
-    :listen_port          => '5432',                           # node.postgresql.listen_port,
+    :listen_port          => node.postgresql.listen_port,
     :master               => node[:postgresql][:master],
     :standby              => node.postgresql.standby,
     :pg_master            => pg_master,
