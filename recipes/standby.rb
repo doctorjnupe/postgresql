@@ -27,6 +27,6 @@ template "/var/lib/postgresql/#{node[:postgresql][:version]}/main/recovery.conf"
     :replication_appname  => replication_appname,
     :replication_address  => replication_address
   )
-  notifies :restart, resources(:service => "postgresql")
+  notifies :restart, 'service[postgresql]', :immediately
 end
 
