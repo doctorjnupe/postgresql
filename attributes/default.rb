@@ -27,7 +27,7 @@ default['postgresql']['contrib']['packages'] = %w{postgresql-contrib}
 
 default['postgresql']['enable_pitti_ppa'] = false
 default['postgresql']['enable_pgdg_yum'] = false
-
+default['postgresql']['server']['service_name'] = "postgresql-#{node['postgresql']['version']}"
 
 default[:postgresql][:hba] = [
   { :method => 'md5', :address => '127.0.0.1/32' },
