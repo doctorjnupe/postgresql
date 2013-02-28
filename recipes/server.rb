@@ -82,6 +82,7 @@ bash "assign-postgres-password" do
   code <<-EOH
 echo "ALTER ROLE postgres ENCRYPTED PASSWORD '#{node['postgresql']['password']['postgres']}';" | psql
   EOH
-  not_if "echo 'connect' | PGPASSWORD=#{node['postgresql']['password']['postgres']} psql --username=postgres --no-password -h localhost"
+  only_if "invoke-rc.d postgresql status | grep main" # make sure server is actually running
+  not_if "echo '\connect' | PGPASSWORD=#{node['postgresql']['password']['postgres']} psql --username=postgres --no-password -h localhost"
   action :run
 end
