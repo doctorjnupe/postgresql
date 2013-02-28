@@ -5,6 +5,7 @@
 
 default["postgresql"]["version"]                         = "9.1"
 postgresql_package_name                                  = 'postgresql'
+default['postgresql']['server']['service_name']          = 'postgresql'
 default[:postgresql][:ssl]                               = "true"
 
 set[:postgresql][:dir]                                   = "/etc/postgresql/#{node[:postgresql][:version]}/main"
