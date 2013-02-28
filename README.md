@@ -392,22 +392,84 @@ database if you have `postgres` access and want to use the same password:<br>
 * You can run this from a linux commandline:<br>
 `echo -n 'iloverandompasswordsbutthiswilldo''postgres' | openssl md5 | sed -e 's/.* /md5/'`
 
-License and Author
-==================
+Streaming Replication/Hot Standby
+---------------------------------
+To set this up, you'd need to:
 
-- Author:: Joshua Timberman (<joshua@opscode.com>)
-- Author:: Lamont Granquist (<lamont@opscode.com>)
-- Author:: Chris Roberts (<chrisroberts.code@gmail.com>)
-- Author:: David Crane (<davidc@donorschoose.org>)
+1. Bootstrap the Nodes (you've got know know their IP addresses!)
+2. Assign the `server` recipe to the master and slave nodes to install a
+   standard postgresql server.
+3. Log into the Standby machine and shut down PostgreSQL.
+4. Create the Master/Standby Roles (see below) and apply to each node.
+        * Make sure both nodes have access to each others' PostgreSQL service
+          by adding the appropriate values for the `node['postgresql']['hba']`
+          attribute.
+5. Run `chef-client` on the Master. Wait for it to finish.
+6. Run `chef-client` on the Standby. It will fail. That's ok. Log into the
+   standby and make sure PostgreSQL is not running.
+7. Log into the master and manually remove 
+   `/var/lib/postgresql/9.1/main/.initial_transfer_complete`, then re-run
+   `chef-client` (it will again copy the database data directory 
+   over to the standby via rsync, so you'll be prompted for a password unless 
+   you've got public keys in place... make sure this step works!)
+8. Restart postgresql on the master, then on the standby and run `chef-client`
+   on both nodes. Check to make sure PostgreSQL's `sender` and `receiver`
+   processes are running:
+    * Run `ps -ef | grep sender` on the Master
+    * Run `ps -ef | grep receiver` on the Standby
+9. Subsequent runs of `chef-client` should work without any errors.
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
+### Master Role
+To configure a Master server, you would need to create a role that sets the 
+appropriate properties. For example, given that you have a node namded `db2` 
+with an ip address of `10.0.0.11`, you might create a role similar to the one 
+below:
 
-    http://www.apache.org/licenses/LICENSE-2.0
+    name "pg_server_master"
+    description "A PostgreSQL Master"
+    run_list "recipe[postgresql::server]"
 
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+    override_attributes(
+      :postgresql => {
+        :version => "9.1",
+        :dir => "/etc/postgresql/9.1/main",
+        :master => true,
+        :listen_addresses => "*",
+        :wal_level => "hot_standby",
+        :max_wal_senders => 5,
+        :standby_ips => [ "10.0.0.11", ],
+        :synchronous_standby_names => ["db2", ], # Omit this if you don't want
+                                                 # synchronous replication
+        :hba => [
+            { :method => 'md5', :address => '127.0.0.1/32' },
+            { :method => 'md5', :address => '::1/128' },
+            { :method => 'md5', :address => '10.0.0.10' },
+            { :method => 'md5', :address => '10.0.0.11' },
+        ]
+      }
+    )
+
+### Standby Role
+To configure a Standby, you could create a similar role. Assuming the master 
+was available at an ip address of `10.0.0.10`:
+
+    name "pg_server_standby"
+    description "A PostgreSQL Standby"
+    run_list "recipe[postgresql::server]"
+
+    override_attributes(
+      :postgresql => {
+        :version => "9.1",
+        :dir => "/etc/postgresql/9.1/main",
+        :standby => true,
+        :hot_standby => "on",
+        :master_ip => "10.0.0.10",
+        :hba => [
+            { :method => 'md5', :address => '127.0.0.1/32' },
+            { :method => 'md5', :address => '::1/128' },
+            { :method => 'md5', :address => '10.0.0.10' },
+            { :method => 'md5', :address => '10.0.0.11' },
+        ]
+      }
+    )
+
