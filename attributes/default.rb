@@ -13,6 +13,11 @@ default[:postgresql][:data_dir]                          = "/var/lib/postgresql/
 default['postgresql']['client']['packages']              = %w{postgresql-client libpq-dev}
 default[:postgresql][:server][:packages]                 = [postgresql_package_name]
 
+default[:postgresql][:hba]                               = [
+                                                            { :method => 'md5', :address => '127.0.0.1/32' },
+                                                            { :method => 'md5', :address => '::1/128' } 
+                                                           ] 
+
 default["postgresql"]["environment_variables"]           = {}
 default["postgresql"]["pg_ctl_options"]                  = ""
 default["postgresql"]["pg_hba"]                          = []
