@@ -19,16 +19,8 @@
 # limitations under the License.
 #
 
-if(node['postgresql']['enable_pitti_ppa'])
-  include_recipe 'postgresql::ppa_pitti_postgresql'
-end
-
-if(node['postgresql']['enable_pgdg_yum'])
-  include_recipe 'postgresql::yum_pgdg_postgresql'
-end
-
 node['postgresql']['client']['packages'].each do |pg_pack|
-
-  package pg_pack
-
+  package pg_pack do
+    action :install
+  end
 end

@@ -3,16 +3,14 @@
 # Recipe:: master
 #
 # Copy data files from master to standby. Should only happen once.
-query = "chef_environment:#{node.chef_environment} AND role:postgresql-standby"
-standby_servers = search(:node, query)
-
-standby_servers.each do |server|
-  bash "copy-master-data-files-to-standby" do
+if node[:postgresql][:master] && (not node[:postgresql][:standby_ips].empty?)
+  node[:postgresql][:standby_ips].each do |address|
+    bash "Copy Master data files to Standby" do
       user "root"
-      cwd  "/var/lib/postgresql/#{node[:postgresql][:version]}/main/"
+      cwd "/var/lib/postgresql/#{node[:postgresql][:version]}/main/"
       code <<-EOH
         invoke-rc.d postgresql stop
-        rsync -av --exclude=pg_xlog * #{server[:ipaddress]}:/var/lib/postgresql/#{node[:postgresql][:version]}/main/
+        rsync -av --exclude=pg_xlog * #{address}:/var/lib/postgresql/#{node[:postgresql][:version]}/main/
         touch .initial_transfer_complete
         invoke-rc.d postgresql start
       EOH
@@ -20,5 +18,5 @@ standby_servers.each do |server|
         File.exists?("/var/lib/postgresql/#{node[:postgresql][:version]}/main/.initial_transfer_complete")
       end
     end
-
+  end
 end

@@ -1,12 +1,5 @@
 # recovery.conf
 
-<% if @standby %>
 standby_mode = 'on'
-<% else %>
-standby_mode = 'off'
-<% end %>
-
-primary_conninfo = 'host=<%= @replication_address %> port=<%= @listen_port %> user=<%= @replication_user %> password=<%= @replication_password %> application_name=<%= @replication_appname %>'
-trigger_file = '/etc/postgresql/<%= node.postgresql.version %>/main/trigger.failover'
-
-#restore_command = 'cp /home/ubuntu/archive/%f "%p"'
+primary_conninfo = '<%= @primary_conninfo %>'
+trigger_file = '<%= @trigger_file %>'
