@@ -38,6 +38,12 @@ if Chef::Config[:solo]
       ].join(' '))
   end
 else
+  # TODO: The "secure_password" is randomly generated plain text, so it
+  # should be converted to a PostgreSQL specific "encrypted password" if
+  # it should actually install a password (as opposed to disable password
+  # login for user 'postgres'). However, a random password wouldn't be
+  # useful if it weren't saved as clear text in Chef Server for later
+  # retrieval. 
   node.set_unless['postgresql']['password']['postgres'] = secure_password
   node.save
 end
@@ -76,6 +82,7 @@ bash "assign-postgres-password" do
   code <<-EOH
 echo "ALTER ROLE postgres ENCRYPTED PASSWORD '#{node['postgresql']['password']['postgres']}';" | psql
   EOH
-  not_if "echo '\\connect' | PGPASSWORD=#{node['postgresql']['password']['postgres']} psql --username=postgres --no-password -h localhost"
+  only_if "invoke-rc.d postgresql status | grep main" # make sure server is actually running
+  not_if "echo '\connect' | PGPASSWORD=#{node['postgresql']['password']['postgres']} psql --username=postgres --no-password -h localhost"
   action :run
 end
